@@ -232,6 +232,10 @@ push_new_release() {
     # Push to GitHub
     push_to_github || return 1
 
+    if $dry_run; then
+        git reset --hard
+    fi
+
     # Push GitHub release
     echo "----------------------------------------------------------------------"
     echo "Pushing new GitHub release"

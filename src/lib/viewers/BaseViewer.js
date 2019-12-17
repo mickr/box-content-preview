@@ -737,6 +737,19 @@ class BaseViewer extends EventEmitter {
     }
 
     /**
+     * Retrieves all values of a viewer option.
+     *
+     * @protected
+     * @return {Object|undefined} Value of a viewer option
+     */
+    getAllViewerOptions() {
+        const { viewers, viewer } = this.options;
+        const viewerName = getProp(viewer, 'NAME');
+
+        return getProp(viewers, viewerName);
+    }
+
+    /**
      * Loads assets needed for a viewer
      *
      * @protected

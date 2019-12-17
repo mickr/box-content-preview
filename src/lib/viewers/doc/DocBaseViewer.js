@@ -654,7 +654,7 @@ class DocBaseViewer extends BaseViewer {
         const disableCreateObjectURL = false;
 
         // Disable font faces on IOS 10.3.X
-        const disableFontFace = Browser.hasFontIssue();
+        const disableFontFace = Browser.hasFontIssue() || this.getViewerOption('disableFontFace');
 
         // Disable streaming via fetch until performance is improved
         const disableStream = true;
@@ -681,8 +681,7 @@ class DocBaseViewer extends BaseViewer {
             queryParams[QUERY_PARAM_ENCODING] = this.encoding;
         }
 
-        // Load PDF from representation URL and set as document for pdf.js. Cache task for destruction
-        this.pdfLoadingTask = this.pdfjsLib.getDocument({
+        const options = {
             cMapPacked: true,
             cMapUrl: assetUrlCreator(`third-party/doc/${DOC_STATIC_ASSETS_VERSION}/cmaps/`),
             disableCreateObjectURL,
@@ -692,8 +691,11 @@ class DocBaseViewer extends BaseViewer {
             httpHeaders,
             rangeChunkSize,
             url: appendQueryParams(pdfUrl, queryParams),
-        });
+            ...this.getAllViewerOptions(),
+        };
 
+        // Load PDF from representation URL and set as document for pdf.js. Cache task for destruction
+        this.pdfLoadingTask = this.pdfjsLib.getDocument(options);
         return this.pdfLoadingTask.promise
             .then(doc => {
                 this.pdfLinkService.setDocument(doc, pdfUrl);

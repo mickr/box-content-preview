@@ -1027,6 +1027,7 @@ describe('src/lib/viewers/doc/DocBaseViewer', () => {
                     promise: Promise.resolve(),
                 });
                 stubs.getViewerOption = sandbox.stub(docBase, 'getViewerOption');
+                stubs.getAllViewerOptions = sandbox.stub(docBase, 'getAllViewerOptions').returns({});
                 stubs.pdfEventBus = {
                     off: sandbox.stub(),
                     on: sandbox.stub(),

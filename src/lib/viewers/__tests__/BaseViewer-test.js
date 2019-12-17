@@ -845,6 +845,27 @@ describe('lib/viewers/BaseViewer', () => {
         });
     });
 
+    describe('getAllViewerOptions', () => {
+        it('should return the user-defined viewer options', () => {
+            const hero = {
+                name: 'captain-america',
+                location: 'NYC',
+            };
+
+            base.options.viewers = {
+                Base: hero,
+            };
+
+            base.options.viewer = { NAME: 'Base' };
+
+            expect(base.getAllViewerOptions()).to.equal(hero);
+        });
+
+        it('should return undefined if no matching user-defined viewer option is found', () => {
+            expect(base.getViewerOption('fooBar')).to.equal(undefined);
+        });
+    });
+
     describe('loadAssets()', () => {
         beforeEach(() => {
             sandbox.stub(util, 'createAssetUrlCreator').returns(() => {});

@@ -12,7 +12,7 @@ export type Props = FullscreenToggleProps & {
     onCancel: () => void;
 };
 
-const ControlButton = ({ onClick, title, Icon }: { onClick: () => void; title: string; Icon: any }) => (
+const ControlButton = ({ onClick, title, Icon }: { onClick: () => void; title: string; Icon: React.ComponentType }) => (
     <button className="bp-FullscreenToggle" onClick={onClick} title={title} type="button">
         <Icon />
     </button>

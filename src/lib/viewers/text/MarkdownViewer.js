@@ -1,7 +1,8 @@
 import React from 'react';
 import MarkdownControls from './MarkdownControls';
 import PlainTextViewer from './PlainTextViewer';
-import { CLASS_HIDDEN, TEXT_STATIC_ASSETS_VERSION } from '../../constants';
+import MarkdownEditor from './MarkdownEditor';
+import { CLASS_HIDDEN, TEXT_STATIC_ASSETS_VERSION, API_HOST } from '../../constants';
 import { VIEWER_EVENT } from '../../events';
 import './Markdown.scss';
 
@@ -23,6 +24,9 @@ class MarkdownViewer extends PlainTextViewer {
         this.codeEl = null;
         this.markdownEl = this.textEl.appendChild(document.createElement('article'));
         this.markdownEl.classList.add('markdown-body');
+
+        this.editorEl = this.textEl.appendChild(document.createElement('div'));
+        this.editorEl.classList.add('bp-markdown-editor', CLASS_HIDDEN);
     }
 
     /**
@@ -76,6 +80,7 @@ class MarkdownViewer extends PlainTextViewer {
      * @return {void}
      */
     finishLoading(content) {
+        this.rawContent = content;
         const md = this.initRemarkable();
         this.markdownEl.innerHTML = md.render(content);
 
@@ -95,7 +100,92 @@ class MarkdownViewer extends PlainTextViewer {
             return;
         }
 
-        this.controls.render(<MarkdownControls onFullscreenToggle={this.toggleFullscreen} />);
+        this.controls.render(
+            <MarkdownControls
+                isEditing={this.isEditing}
+                onCancel={this.handleCancel}
+                onEdit={this.handleEdit}
+                onFullscreenToggle={this.toggleFullscreen}
+                onSave={this.handleSave}
+            />,
+        );
+    }
+
+    handleEdit = () => {
+        this.lockFile()
+            .then(() => {
+                this.toggleEditMode(true);
+            })
+            .catch(err => {
+                this.triggerError(err);
+            });
+    };
+
+    handleSave = () => {
+        const newContent = this.editor.getContent();
+        this.saveVersion(newContent)
+            .then(() => {
+                this.rawContent = newContent;
+                this.unlockFile();
+                this.toggleEditMode(false);
+                const md = this.initRemarkable();
+                this.markdownEl.innerHTML = md.render(newContent);
+            })
+            .catch(err => {
+                this.triggerError(err);
+            });
+    };
+
+    handleCancel = () => {
+        this.unlockFile().then(() => {
+            this.toggleEditMode(false);
+        });
+    };
+
+    toggleEditMode(isEditing) {
+        this.isEditing = isEditing;
+        if (isEditing) {
+            this.markdownEl.classList.add(CLASS_HIDDEN);
+            this.editorEl.classList.remove(CLASS_HIDDEN);
+            this.editor = new MarkdownEditor(this.editorEl, this.rawContent);
+            this.editor.focus();
+        } else {
+            if (this.editor) {
+                this.editor.destroy();
+                this.editor = null;
+            }
+            this.editorEl.classList.add(CLASS_HIDDEN);
+            this.markdownEl.classList.remove(CLASS_HIDDEN);
+        }
+        this.renderUI();
+    }
+
+    lockFile() {
+        const { id } = this.options.file;
+        const { apiHost = API_HOST } = this.options;
+        const url = `${apiHost}/2.0/files/${id}`;
+        return this.api.put(url, {
+            lock: { type: 'lock', is_download_prevented: false },
+        });
+    }
+
+    unlockFile() {
+        const { id } = this.options.file;
+        const { apiHost = API_HOST } = this.options;
+        const url = `${apiHost}/2.0/files/${id}`;
+        return this.api.put(url, { lock: null });
+    }
+
+    saveVersion(content) {
+        const { id, name } = this.options.file;
+        const { apiHost = API_HOST } = this.options;
+        const uploadHost = apiHost.replace('api.', 'upload.');
+        const url = `${uploadHost}/api/2.0/files/${id}/content`;
+
+        const formData = new FormData();
+        formData.append('file', new Blob([content]), name);
+
+        return this.api.post(url, formData);
     }
 
     /**
